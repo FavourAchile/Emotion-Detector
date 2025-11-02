@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, jsonify
-from fer import FER
+#from fer import FER
 import cv2
 import numpy as np
 import os
