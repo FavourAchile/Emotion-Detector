@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Emotion Detection</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <h1>Emotion Detection Demo</h1>
+
+  <div>
+    <h2>Upload image</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="text" id="nameUpload" name="name" placeholder="Your name (optional)">
+      <input type="file" id="imageFile" name="image" accept="image/*">
+      <button type="submit">Predict</button>
+    </form>
+    <pre id="uploadResult"></pre>
+  </div>
+
+  <hr>
+
+  <div>
+    <h2>Webcam capture</h2>
+    <input type="text" id="nameCam" placeholder="Your name (optional)">
+    <video id="video" width="320" height="240" autoplay></video><br>
+    <button id="snap">Capture & Predict</button>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <pre id="cameraResult"></pre>
+  </div>
+
+  <hr>
+
+  <div>
+    <h2>History</h2>
+    <button id="refreshHistory">Refresh</button>
+    <ul id="historyList"></ul>
+  </div>
+
+  <script src="/static/js/webcam.js"></script>
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const name = document.getElementById('nameUpload').value;
+      const fileInput = document.getElementById('imageFile');
+      if (!fileInput.files[0]) { alert('Choose an image'); return; }
+      const form = new FormData();
+      form.append('name', name);
+      form.append('image', fileInput.files[0]);
+      const res = await fetch('/predict_upload', {method:'POST', body: form});
+      const json = await res.json();
+      document.getElementById('uploadResult').innerText = JSON.stringify(json, null, 2);
+    });
+
+    async function loadHistory(){
+      const res = await fetch('/history');
+      const items = await res.json();
+      const ul = document.getElementById('historyList'); ul.innerHTML = '';
+      items.forEach(it=>{
+        const li = document.createElement('li');
+        li.innerText = `${it.timestamp} | ${it.name} | ${it.result}`;
+        ul.appendChild(li);
+      });
+    }
+    document.getElementById('refreshHistory').addEventListener('click', loadHistory);
+    loadHistory();
+  </script>
+  <script>
+const video = document.getElementById('video');
+const snapButton = document.getElementById('snap');
+const canvas = document.getElementById('canvas');
+const cameraResult = document.getElementById('cameraResult');
+
+// Ask for webcam access
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => { video.srcObject = stream; })
+  .catch(err => alert("Camera access error: " + err));
+
+// Capture and predict
+snapButton.addEventListener('click', async () => {
+  const name = document.getElementById('nameCam').value;
+  const context = canvas.getContext('2d');
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/png');
+
+  const res = await fetch('/predict_camera', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageData: dataUrl, name: name })
+  });
+
+  const json = await res.json();
+  cameraResult.innerText = JSON.stringify(json, null, 2);
+});
+</script>
+</body>
+</html>
