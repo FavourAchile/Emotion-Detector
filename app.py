@@ -1,13 +1,9 @@
 from flask import Flask, request, render_template, jsonify
-#from fer import FER
 import cv2
 import numpy as np
 import os
 
 app = Flask(__name__)
-
-# Initialize the pretrained FER detector
-detector = FER(mtcnn=True)  # mtcnn=True for more accurate face detection
 
 # Home page
 @app.route("/")
@@ -28,16 +24,14 @@ def predict():
     file_bytes = np.frombuffer(file.read(), np.uint8)
     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     
-    # Detect emotions
-    results = detector.detect_emotions(img)
-    if not results:
-        return jsonify({"emotion": "No face detected"})
-    
-    # Get the first face detected
-    emotions = results[0]["emotions"]
-    dominant_emotion = max(emotions, key=emotions.get)
-    
+    # TODO: Add your own emotion detection logic here
+    # Currently, just returns a placeholder
+    dominant_emotion = "Not implemented"
+
     return jsonify({"emotion": dominant_emotion})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Use PORT environment variable for Render deployment
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
